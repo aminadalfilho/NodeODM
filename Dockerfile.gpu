@@ -1,12 +1,16 @@
-FROM opendronemap/odm:gpu
+FROM odm:gpu-blackwell-v3
 MAINTAINER Piero Toffanin <pt@masseranolabs.com>
 
 EXPOSE 3000
 
 USER root
 
-ENV NVM_DIR /usr/local/nvm
-ENV NODE_VERSION 14
+ENV NVM_DIR=/usr/local/nvm
+ENV NODE_VERSION=14
+
+RUN mkdir /var/www
+WORKDIR "/var/www"
+COPY install_deps.sh node.sh ./
 
 RUN bash install_deps.sh && \
     ln -s /code/SuperBuild/install/bin/untwine /usr/bin/untwine && \
@@ -14,15 +18,18 @@ RUN bash install_deps.sh && \
     ln -s /code/SuperBuild/install/bin/pdal /usr/bin/pdal && \
     ln -s /var/www/node.sh /usr/bin/node
 
-RUN echo /usr/local/cuda-11.2/compat >> /etc/ld.so.conf.d/989_cuda-11.conf && ldconfig
+RUN echo /usr/local/cuda/compat >> /etc/ld.so.conf.d/cuda-compat.conf && ldconfig
 
-RUN mkdir /var/www
+SHELL ["/bin/bash", "-c"]
+RUN source $NVM_DIR/nvm.sh && \
+    NODE_PATH=$(dirname $(nvm which $NODE_VERSION)) && \
+    ln -sf $NODE_PATH/npm /usr/bin/npm && \
+    ln -sf $NODE_PATH/npx /usr/bin/npx
 
-WORKDIR "/var/www"
 RUN useradd -m -d "/home/odm" -s /bin/bash odm
 COPY --chown=odm:odm . /var/www
 
-RUN npm install --production && mkdir -p tmp && node index.js --powercycle
+RUN source $NVM_DIR/nvm.sh && npm install --production && mkdir -p tmp && node index.js --powercycle
 
 RUN chown -R odm:odm /var/www
 RUN chown -R odm:odm /code
