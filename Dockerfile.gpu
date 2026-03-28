@@ -1,4 +1,4 @@
-FROM odm:gpu-blackwell-v3
+FROM odm:gpu-blackwell-v4
 MAINTAINER Piero Toffanin <pt@masseranolabs.com>
 
 EXPOSE 3000
